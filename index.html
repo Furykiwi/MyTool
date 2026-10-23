@@ -15,69 +15,179 @@
       --text: #f8fafc;
       --text-muted: #94a3b8;
       --border: #334155;
+      --danger: #ef4444;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: var(--bg); color: var(--text); padding-bottom: 80px; }
-    header { padding: 1.5rem; text-align: center; background: var(--card); border-bottom: 1px solid var(--border); }
-    h1 { font-size: 1.5rem; color: var(--accent); }
+    
+    /* Header */
+    header { padding: 1.25rem; text-align: center; background: var(--card); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    h1 { font-size: 1.4rem; color: var(--accent); }
+    .lock-btn { background: transparent; border: 1px solid var(--border); color: var(--text-muted); padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.85rem; cursor: pointer; width: auto; margin: 0; }
+
     .container { max-width: 600px; margin: 1rem auto; padding: 0 1rem; }
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+    
     input, textarea, button { width: 100%; padding: 0.75rem; margin-top: 0.5rem; border-radius: 8px; border: 1px solid var(--border); background: #0f172a; color: var(--text); font-size: 1rem; }
     button { background: var(--accent); color: #000; font-weight: bold; border: none; cursor: pointer; margin-top: 1rem; }
     button:active { opacity: 0.8; }
-    .recipe-list { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
-    .recipe-item { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; }
-    .recipe-title { font-size: 1.2rem; font-weight: bold; color: var(--accent); margin-bottom: 0.5rem; }
-    .recipe-meta { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; }
-    ul { margin-left: 1.2rem; margin-bottom: 0.5rem; }
+    
+    /* Tabs */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    
+    .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 65px; background: var(--card); border-top: 1px solid var(--border); display: flex; justify-content: space-around; align-items: center; padding-bottom: env(safe-area-inset-bottom); }
+    .nav-item { color: var(--text-muted); text-decoration: none; font-size: 0.85rem; display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; margin: 0; padding: 0; width: auto; }
+    .nav-item.active { color: var(--accent); }
+
+    /* PIN Overlay */
+    #pinOverlay { position: fixed; inset: 0; background: var(--bg); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2rem; }
+    .pin-input { font-size: 2rem; letter-spacing: 0.5rem; text-align: center; width: 200px; }
+
+    /* Lists */
+    .list { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
+    .item-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; position: relative; }
+    .item-title { font-size: 1.1rem; font-weight: bold; color: var(--accent); margin-bottom: 0.5rem; }
+    .delete-btn { position: absolute; top: 1rem; right: 1rem; background: transparent; color: var(--danger); border: none; font-size: 0.85rem; width: auto; margin: 0; cursor: pointer; }
+    
     .status { font-size: 0.85rem; color: var(--accent); margin-top: 0.5rem; text-align: center; }
   </style>
 </head>
 <body>
 
+  <!-- PIN Protection Overlay -->
+  <div id="pinOverlay">
+    <h2>VaultTools</h2>
+    <p style="color: var(--text-muted); margin-top: 0.5rem;">Enter Passcode</p>
+    <input type="password" id="pinInput" class="pin-input" maxlength="4" pattern="\d*" inputmode="numeric">
+    <button onclick="unlockApp()" style="width: 200px;">Unlock</button>
+    <p id="pinError" style="color: var(--danger); margin-top: 0.5rem; font-size: 0.85rem;"></p>
+  </div>
+
   <header>
     <h1>VaultTools</h1>
+    <button class="lock-btn" onclick="lockApp()">Lock</button>
   </header>
 
   <div class="container">
-    <!-- Recipe Extractor Card -->
-    <div class="card">
-      <h2>Extract New Recipe</h2>
-      <input type="url" id="recipeUrl" placeholder="Paste recipe website URL here..." />
-      <button onclick="extractAndSaveRecipe()">Extract & Save Recipe</button>
-      <div id="status" class="status"></div>
+    
+    <!-- RECIPES TAB -->
+    <div id="tab-recipes" class="tab-content active">
+      <div class="card">
+        <h3>Save / Scrape Recipe</h3>
+        <input type="url" id="recipeUrl" placeholder="Paste recipe URL..." />
+        <input type="text" id="manualTitle" placeholder="Custom Title (optional)" />
+        <button onclick="saveRecipe()">Extract & Save</button>
+        <div id="recipeStatus" class="status"></div>
+      </div>
+
+      <h3>Saved Recipes</h3>
+      <div id="recipeContainer" class="list">
+        <p style="color: var(--text-muted); text-align: center;">Loading...</p>
+      </div>
     </div>
 
-    <!-- Saved Recipes List -->
-    <h2>Saved Recipes</h2>
-    <div id="recipeContainer" class="recipe-list">
-      <p style="color: var(--text-muted); text-align: center;">Loading recipes...</p>
+    <!-- NOTES TAB -->
+    <div id="tab-notes" class="tab-content">
+      <div class="card">
+        <h3>Quick Note</h3>
+        <input type="text" id="noteTitle" placeholder="Note Title..." />
+        <textarea id="noteBody" rows="3" placeholder="Write something..." style="margin-top: 0.5rem;"></textarea>
+        <button onclick="saveNote()">Save Note</button>
+      </div>
+
+      <h3>Saved Notes</h3>
+      <div id="notesContainer" class="list">
+        <p style="color: var(--text-muted); text-align: center;">Loading...</p>
+      </div>
     </div>
+
+    <!-- SETTINGS TAB -->
+    <div id="tab-settings" class="tab-content">
+      <div class="card">
+        <h3>Passcode Settings</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">Update the lock code stored on this device.</p>
+        <input type="password" id="newPin" placeholder="New 4-digit PIN" maxlength="4" />
+        <button onclick="updatePin()">Update PIN</button>
+        <div id="pinStatus" class="status"></div>
+      </div>
+    </div>
+
   </div>
+
+  <!-- Bottom Nav -->
+  <nav class="nav-bar">
+    <button class="nav-item active" onclick="switchTab('recipes', this)">
+      <span>📖</span>
+      <span>Recipes</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('notes', this)">
+      <span>📝</span>
+      <span>Notes</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('settings', this)">
+      <span>⚙️</span>
+      <span>Settings</span>
+    </button>
+  </nav>
 
   <script>
     // -------------------------------------------------------------
-    // REPLACE THESE TWO STRINGS WITH YOUR SUPABASE CREDENTIALS:
-    // Project Settings -> API -> Project URL & anon key
+    // REPLACE WITH YOUR SUPABASE KEYS
     // -------------------------------------------------------------
     const SUPABASE_URL = "https://mqpvixygvhrkxrkwncdq.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_QyZJwvSXj7X1pN5agAOBWA_GcdBNnTm";
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Initial load & real-time setup
+    // Auth PIN Logic
+    function getStoredPin() { return localStorage.getItem('vault_pin') || '1234'; }
+    
+    function unlockApp() {
+      const entered = document.getElementById('pinInput').value;
+      if (entered === getStoredPin()) {
+        document.getElementById('pinOverlay').style.display = 'none';
+        document.getElementById('pinInput').value = '';
+        document.getElementById('pinError').textContent = '';
+      } else {
+        document.getElementById('pinError').textContent = 'Incorrect PIN';
+      }
+    }
+
+    function lockApp() {
+      document.getElementById('pinOverlay').style.display = 'flex';
+    }
+
+    function updatePin() {
+      const pin = document.getElementById('newPin').value;
+      if (pin.length === 4 && /^\d+$/.test(pin)) {
+        localStorage.setItem('vault_pin', pin);
+        document.getElementById('pinStatus').textContent = 'PIN updated for this device!';
+        document.getElementById('newPin').value = '';
+      } else {
+        document.getElementById('pinStatus').textContent = 'Please enter a valid 4-digit PIN.';
+      }
+    }
+
+    // Navigation
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      document.getElementById(`tab-${tabId}`).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    // Realtime Init
     document.addEventListener("DOMContentLoaded", () => {
       loadRecipes();
-      
-      // Subscribe to real-time changes
-      supabaseClient
-        .channel('public:Recipes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'Recipes' }, () => {
-          loadRecipes();
-        })
+      loadNotes();
+
+      supabaseClient.channel('public:Recipes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'Recipes' }, () => loadRecipes())
         .subscribe();
     });
 
+    // Recipe Handling
     async function loadRecipes() {
       const container = document.getElementById("recipeContainer");
       const { data: recipes, error } = await supabaseClient
@@ -86,143 +196,156 @@
         .order('id', { ascending: false });
 
       if (error) {
-        container.innerHTML = `<p style="color: #ef4444;">Error loading recipes: ${error.message}</p>`;
+        container.innerHTML = `<p style="color: var(--danger);">Error: ${error.message}</p>`;
         return;
       }
-
       if (!recipes || recipes.length === 0) {
         container.innerHTML = `<p style="color: var(--text-muted); text-align: center;">No recipes saved yet.</p>`;
         return;
       }
 
       container.innerHTML = recipes.map(r => `
-        <div class="recipe-item">
-          <div class="recipe-title">${escapeHtml(r.title || 'Untitled Recipe')}</div>
-          ${r.url ? `<div class="recipe-meta"><a href="${r.url}" target="_blank" style="color: var(--accent);">Original Link</a></div>` : ''}
-          ${renderIngredients(r.ingredients)}
-          ${r.instructions ? `<div style="white-space: pre-line; margin-top: 0.5rem; font-size: 0.95rem;">${escapeHtml(r.instructions)}</div>` : ''}
+        <div class="item-card">
+          <button class="delete-btn" onclick="deleteRecipe(${r.id})">Delete</button>
+          <div class="item-title">${escapeHtml(r.title || 'Untitled')}</div>
+          ${r.url ? `<div style="margin-bottom:0.5rem;"><a href="${r.url}" target="_blank" style="color:var(--accent); font-size:0.85rem;">Original Website</a></div>` : ''}
+          ${renderList(r.ingredients)}
+          ${r.instructions ? `<div style="white-space: pre-line; font-size: 0.9rem; margin-top:0.5rem;">${escapeHtml(r.instructions)}</div>` : ''}
         </div>
       `).join('');
     }
 
-    async function extractAndSaveRecipe() {
+    async function saveRecipe() {
       const urlInput = document.getElementById("recipeUrl");
-      const status = document.getElementById("status");
+      const titleInput = document.getElementById("manualTitle");
+      const status = document.getElementById("recipeStatus");
       const url = urlInput.value.trim();
+      const customTitle = titleInput.value.trim();
 
-      if (!url) {
-        status.textContent = "Please enter a URL.";
+      if (!url && !customTitle) {
+        status.textContent = "Please provide a URL or Title.";
         return;
       }
 
-      status.textContent = "Fetching and extracting recipe...";
+      status.textContent = "Processing...";
 
-      try {
-        // Fetch HTML via CORS proxy
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-        const res = await fetch(proxyUrl);
-        const data = await res.json();
-        
-        let extractedTitle = "";
-        let extractedIngredients = [];
-        let extractedInstructions = "";
+      let extractedTitle = customTitle;
+      let extractedIngredients = [];
+      let extractedInstructions = "";
 
-        if (data.contents) {
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(data.contents, 'text/html');
-          
-          // Look for JSON-LD structured data (Schema.org Recipe)
-          const jsonLdScripts = doc.querySelectorAll('script[type="application/ld+json"]');
-          
-          jsonLdScripts.forEach(script => {
-            try {
-              const json = JSON.parse(script.textContent);
-              const recipeObj = findRecipeObject(json);
-              if (recipeObj) {
-                extractedTitle = recipeObj.name || "";
-                extractedIngredients = recipeObj.recipeIngredient || [];
-                if (Array.isArray(recipeObj.recipeInstructions)) {
-                  extractedInstructions = recipeObj.recipeInstructions
-                    .map(step => typeof step === 'string' ? step : step.text || "")
-                    .join("\n\n");
-                } else if (typeof recipeObj.recipeInstructions === 'string') {
-                  extractedInstructions = recipeObj.recipeInstructions;
+      if (url) {
+        try {
+          const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+          const data = await res.json();
+          if (data.contents) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(data.contents, 'text/html');
+            const scripts = doc.querySelectorAll('script[type="application/ld+json"]');
+            
+            scripts.forEach(s => {
+              try {
+                const json = JSON.parse(s.textContent);
+                const rec = findRecipe(json);
+                if (rec) {
+                  if (!extractedTitle) extractedTitle = rec.name;
+                  extractedIngredients = rec.recipeIngredient || [];
+                  if (Array.isArray(rec.recipeInstructions)) {
+                    extractedInstructions = rec.recipeInstructions.map(step => typeof step === 'string' ? step : step.text || "").join("\n\n");
+                  } else if (typeof rec.recipeInstructions === 'string') {
+                    extractedInstructions = rec.recipeInstructions;
+                  }
                 }
-              }
-            } catch (e) {
-              console.warn("Failed parsing script tag", e);
-            }
-          });
-
-          // Fallback if no Schema.org JSON-LD found
-          if (!extractedTitle) {
-            extractedTitle = doc.querySelector('title')?.textContent || "Extracted Recipe";
+              } catch(e){}
+            });
+            if (!extractedTitle) extractedTitle = doc.querySelector('title')?.textContent || "Saved Link";
           }
+        } catch(e) {
+          console.warn("Proxy block, saving basic link.");
         }
+      }
 
-        // Insert into Supabase
-        const { error } = await supabaseClient
-          .from('Recipes')
-          .insert([{
-            title: extractedTitle,
-            ingredients: extractedIngredients,
-            instructions: extractedInstructions,
-            url: url
-          }]);
+      const { error } = await supabaseClient.from('Recipes').insert([{
+        title: extractedTitle || "Recipe Link",
+        ingredients: extractedIngredients,
+        instructions: extractedInstructions,
+        url: url
+      }]);
 
-        if (error) throw error;
-
-        status.textContent = "Recipe saved successfully!";
+      if (error) status.textContent = `Error: ${error.message}`;
+      else {
+        status.textContent = "Saved successfully!";
         urlInput.value = "";
-        loadRecipes();
-
-      } catch (err) {
-        console.error(err);
-        status.textContent = "Failed to extract directly. Saving link standard format.";
-        
-        // Save basic fallback entry
-        await supabaseClient.from('Recipes').insert([{
-          title: "Saved Recipe Link",
-          ingredients: [],
-          instructions: "Extracted raw content directly from URL.",
-          url: url
-        }]);
+        titleInput.value = "";
         loadRecipes();
       }
     }
 
-    function findRecipeObject(obj) {
+    async function deleteRecipe(id) {
+      if (confirm("Delete this recipe?")) {
+        await supabaseClient.from('Recipes').delete().eq('id', id);
+        loadRecipes();
+      }
+    }
+
+    // Helper Functions
+    function findRecipe(obj) {
       if (!obj) return null;
       if (obj['@type'] === 'Recipe' || (Array.isArray(obj['@type']) && obj['@type'].includes('Recipe'))) return obj;
       if (Array.isArray(obj)) {
-        for (let item of obj) {
-          const found = findRecipeObject(item);
-          if (found) return found;
-        }
+        for (let item of obj) { const f = findRecipe(item); if (f) return f; }
       } else if (typeof obj === 'object') {
-        if (obj['@graph']) return findRecipeObject(obj['@graph']);
-        for (let key in obj) {
-          if (typeof obj[key] === 'object') {
-            const found = findRecipeObject(obj[key]);
-            if (found) return found;
-          }
-        }
+        if (obj['@graph']) return findRecipe(obj['@graph']);
+        for (let k in obj) { if (typeof obj[k] === 'object') { const f = findRecipe(obj[k]); if (f) return f; } }
       }
       return null;
     }
 
-    function renderIngredients(ing) {
-      if (!ing) return '';
-      let list = [];
-      if (Array.isArray(ing)) list = ing;
-      else if (typeof ing === 'string') list = ing.split('\n');
-      
+    function renderList(arr) {
+      if (!arr) return '';
+      let list = Array.isArray(arr) ? arr : typeof arr === 'string' ? arr.split('\n') : [];
       if (list.length === 0) return '';
-      return `<ul>${list.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>`;
+      return `<ul style="margin-left: 1.2rem; font-size: 0.9rem;">${list.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>`;
     }
 
     function escapeHtml(str) {
       return String(str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    // Notes Feature (Dummy Local Handler until Notes DB table is made)
+    function saveNote() {
+      const title = document.getElementById("noteTitle").value.trim();
+      const body = document.getElementById("noteBody").value.trim();
+      if (!title && !body) return;
+      
+      let notes = JSON.parse(localStorage.getItem("vault_notes") || "[]");
+      notes.unshift({ id: Date.now(), title, body });
+      localStorage.setItem("vault_notes", JSON.stringify(notes));
+      
+      document.getElementById("noteTitle").value = "";
+      document.getElementById("noteBody").value = "";
+      loadNotes();
+    }
+
+    function loadNotes() {
+      const container = document.getElementById("notesContainer");
+      let notes = JSON.parse(localStorage.getItem("vault_notes") || "[]");
+      if (notes.length === 0) {
+        container.innerHTML = `<p style="color: var(--text-muted); text-align: center;">No notes saved yet.</p>`;
+        return;
+      }
+      container.innerHTML = notes.map(n => `
+        <div class="item-card">
+          <button class="delete-btn" onclick="deleteNote(${n.id})">Delete</button>
+          <div class="item-title">${escapeHtml(n.title || 'Untitled Note')}</div>
+          <div style="white-space: pre-line; font-size: 0.9rem;">${escapeHtml(n.body)}</div>
+        </div>
+      `).join('');
+    }
+
+    function deleteNote(id) {
+      let notes = JSON.parse(localStorage.getItem("vault_notes") || "[]").filter(n => n.id !== id);
+      localStorage.setItem("vault_notes", JSON.stringify(notes));
+      loadNotes();
     }
   </script>
 </body>
