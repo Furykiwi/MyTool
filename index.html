@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>VaultTools</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -36,10 +36,24 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; transition: background-color 0.2s, color 0.2s, border-color 0.2s; }
-    body { background: var(--bg); color: var(--text); padding-bottom: 80px; -webkit-tap-highlight-color: transparent; }
+    body { background: var(--bg); color: var(--text); padding-bottom: calc(80px + env(safe-area-inset-bottom)); -webkit-tap-highlight-color: transparent; }
     
-    /* Header */
-    header { padding: 1rem 1.25rem; text-align: center; background: var(--card); border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; }
+    /* Header with iOS Safe Area Top Inset */
+    header { 
+      padding-top: max(1rem, env(safe-area-inset-top));
+      padding-bottom: 1rem;
+      padding-left: 1.25rem;
+      padding-right: 1.25rem;
+      text-align: center; 
+      background: var(--card); 
+      border-bottom: 1px solid var(--card-border); 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      position: sticky; 
+      top: 0; 
+      z-index: 50; 
+    }
     h1 { font-size: 1.3rem; font-weight: 700; color: var(--accent); }
     .header-actions { display: flex; gap: 0.5rem; }
     .icon-btn { background: transparent; border: 1px solid var(--card-border); color: var(--text-muted); padding: 0.4rem 0.75rem; border-radius: 8px; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.25rem; }
@@ -59,12 +73,23 @@
     .tab-content { display: none; }
     .tab-content.active { display: block; }
     
-    .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 65px; background: var(--card); border-top: 1px solid var(--card-border); display: flex; justify-content: space-around; align-items: center; padding-bottom: env(safe-area-inset-bottom); z-index: 50; }
+    .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; height: calc(65px + env(safe-area-inset-bottom)); background: var(--card); border-top: 1px solid var(--card-border); display: flex; justify-content: space-around; align-items: center; padding-bottom: env(safe-area-inset-bottom); z-index: 50; }
     .nav-item { color: var(--text-muted); text-decoration: none; font-size: 0.8rem; font-weight: 500; display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; margin: 0; padding: 0; width: auto; cursor: pointer; }
     .nav-item.active { color: var(--accent); }
 
-    /* PIN Overlay */
-    #pinOverlay { position: fixed; inset: 0; background: var(--bg); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2rem; }
+    /* PIN Overlay with iOS Safe Area */
+    #pinOverlay { 
+      position: fixed; 
+      inset: 0; 
+      background: var(--bg); 
+      z-index: 999; 
+      display: flex; 
+      flex-direction: column; 
+      justify-content: center; 
+      align-items: center; 
+      padding: 2rem; 
+      padding-top: calc(2rem + env(safe-area-inset-top)); 
+    }
     .pin-box { background: var(--card); border: 1px solid var(--card-border); padding: 2rem; border-radius: var(--radius); text-align: center; box-shadow: var(--shadow); width: 100%; max-width: 320px; }
     .pin-input { font-size: 2rem; letter-spacing: 0.75rem; text-align: center; width: 100%; margin-top: 1rem; }
 
